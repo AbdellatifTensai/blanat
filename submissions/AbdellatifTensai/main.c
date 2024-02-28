@@ -1,16 +1,17 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
-#include <string.h>
 #include <time.h>
 #include <stdlib.h>
+#include <string.h>
+#include <float.h>
 
 #define  ARRAY_COUNT(arr) (sizeof(arr)/sizeof(arr[0]))
+#define PRODUCTS_HASHES 20000
+#define CITIES_HASHES 20000
 
-static char *input;
-static int inputCount;
 //removed duplicated names: Cantaloupe, Cranberry, Coconut, Honeydew, Pomegranate, Artichoke.
-const char *products[] = {
+char *products[] = {
     "Apple", "Banana", "Orange", "Strawberry", "Grapes",
     "Watermelon", "Pineapple", "Mango", "Kiwi", "Peach",
     "Plum", "Cherry", "Pear", "Blueberry", "Raspberry",
@@ -32,9 +33,9 @@ const char *products[] = {
     "Plantain", "Cactus_Pear", "Kiwano", "Squash_Blossom", "Dragon_Fruit",
     "Parsnip", "Rutabaga", "Salsify", "Bok_Choy", "Endive"
 };
-const size_t productsCount = ARRAY_COUNT(products);
+const int productsCount = ARRAY_COUNT(products);
 
-const char *cities[] = {
+char *cities[] = {
     "Casablanca", "Rabat", "Marrakech", "Fes", "Tangier",
     "Agadir", "Meknes", "Oujda", "Kenitra", "Tetouan",
     "Safi", "El_Jadida", "Beni_Mellal", "Errachidia",
@@ -59,16 +60,17 @@ const char *cities[] = {
     "Saidia", "Bab_Berred", "Midar", "Moulay_Bousselham",
     "Khemisset", "Guerguerat", "Asilah", "Sidi_Bouzid", "Tafraout",
     "Imzouren", "Zemamra", "Sidi_Kacem", "Drarga", "Skhirate"
-    };
-
-const size_t citiesCount = ARRAY_COUNT(cities);
+};
+const int citiesCount = ARRAY_COUNT(cities);
 
 typedef struct{ char digit[4]; } real_num;
 
-static real_num citiesHashes[10000];
+static char *input;
+static int inputCount;
 uint16_t citiesHashesMin = 0;
-static real_num productsHashes[10000];
 uint16_t productsHashesMin = 0;
+uint16_t productsHashesMax = 0;
+float *hashmap;
 
 void slurp_file(){
 	FILE *file = fopen("input.txt", "rb");
@@ -78,35 +80,34 @@ void slurp_file(){
 	rewind(file);
 
 	input = (char *)malloc(inputSize);
-	inputCount = inputSize/sizeof(char); //being explicit
+	inputCount = inputSize;
 	fread(input, sizeof(*input), inputSize, file);
 	fclose(file);
 }
 
-int less_than(real_num a, real_num b){
-	if(a.digit[0] < b.digit[0]) return 1;
-	else if(a.digit[0] > b.digit[0]) return 0;
-	else if(a.digit[1] < b.digit[1]) return 1;
-	else if(a.digit[1] > b.digit[1]) return 0;
-	else if(a.digit[2] < b.digit[2]) return 1;
-	else if(a.digit[2] > b.digit[2]) return 0;
-	else if(a.digit[3] < b.digit[3]) return 1;
-	else if(a.digit[3] > b.digit[3]) return 0;
-
-	return 0;
+float to_float(char digits[4]){
+	float f = 0.0f;
+	f += (digits[0] - '0')*10.0f;
+	f += (digits[1] - '0')*1.0f;
+	f += (digits[2] - '0')*0.1f;
+	f += (digits[3] - '0')*0.01f;
+	return f;
 }
 
-uint16_t products_perf_hash(char *cstr, size_t length){
+uint32_t products_perf_hash(char *cstr, size_t length){
 	//trial and error
 	return cstr[0]*length + cstr[1]*22 + cstr[length/3-1]*21 + cstr[length-1]*13 - productsHashesMin;
 }
 
-uint16_t cities_perf_hash(char *cstr, size_t length){
+uint32_t cities_perf_hash(char *cstr, size_t length){
 	//trial and error
-	return cstr[0]*length + cstr[1]*2 + cstr[length/4-1]*19 + cstr[length*3/4-1]*23 + cstr[length-2]*21 - citiesHashesMin;
+	//return cstr[0]*length + cstr[length-2]*length + cstr[length/4-1]*19 + cstr[length*3/4-1]*23 + cstr[length-1]*9 - citiesHashesMin;
+	//return cstr[0]*length + cstr[1]*length + cstr[2]*19 + cstr[length-1]*6 + cstr[length-2]*5 - citiesHashesMin;
+	return ((cstr[0]<<24) + (cstr[1]<<16) + (cstr[length*3/4-1]<<8) + (cstr[length-1])) % 12345;
 }
 
-void cheapest_products(){
+typedef struct{ char *city; float total; uint32_t hash; } city_record; 
+city_record cheapest_products_city(){
 	char *currentChar = input;
 
 	while((currentChar - input + 1) < inputCount){
@@ -118,68 +119,148 @@ void cheapest_products(){
 		while(*currentChar++ != ',');
 		int currentProductLength = currentChar - currentProduct - 1;
 
-		real_num currentPrice;
-
-		currentPrice.digit[0] = *currentChar++;
+		char digits[4];
+		digits[0] = *currentChar++;
 		if(*currentChar == '.'){
-			currentPrice.digit[1] = currentPrice.digit[0];
-			currentPrice.digit[0] = '0';
+			digits[1] = digits[0];
+			digits[0] = '0';
 		}
 		else
-			currentPrice.digit[1] = *currentChar++;
+			digits[1] = *currentChar++;
 
-		currentPrice.digit[2] = *++currentChar;
-
-		currentPrice.digit[3] = *++currentChar == '\n'? '0': *currentChar++;
+		digits[2] = *++currentChar;
+		digits[3] = *++currentChar == '\n'? '0': *currentChar++;
 		currentChar++;
+		
+		float currentPrice = to_float(digits);
+		uint32_t cityHash = cities_perf_hash(currentCity, currentCityLength);
+		uint32_t productHash = products_perf_hash(currentProduct, currentProductLength);
+		uint32_t priceIndex = cityHash*productsHashesMax + productHash;
+		float currentLowestPrice = hashmap[priceIndex];
 
-		uint16_t productHash = products_perf_hash(currentProduct, currentProductLength);
-		real_num currentLowestPrice = productsHashes[productHash];
-		if(less_than(currentPrice, currentLowestPrice))
-			productsHashes[productHash] = currentPrice;
-
-		//debug
-		//for(int x=0; x<currentProductLength; x++) printf("%c",currentProduct[x]);
-		//printf(" : %c%c.%c%c : %d\n", currentPrice.digit[0], currentPrice.digit[1], currentPrice.digit[2], currentPrice.digit[3], productHash);
+		if(currentPrice < currentLowestPrice)
+			hashmap[priceIndex] = currentPrice;
 	}
-	fflush(stdout);
+
+	char *lowestCity;
+	uint32_t lowestCityHash;
+	float min = FLT_MAX;
+	for(int x=0;x<citiesCount;x++){
+		float sum = 0;
+		char *city = cities[x];
+		uint32_t cityHash = cities_perf_hash(city, strlen(city));
+		for(int y=0;y<productsCount;y++){
+			char *product = products[y];
+			uint32_t productHash = products_perf_hash(product, strlen(product));
+			float price = hashmap[cityHash*productsHashesMax + productHash];
+			if(price != FLT_MAX)
+				sum += price;
+		}
+
+		printf("%s : %f %f\n", city, sum, min);
+		if(sum != 0.0f && sum < min){
+			min = sum;
+			lowestCity = city;
+			lowestCityHash = cityHash;
+		}
+	}
+	return (city_record){ lowestCity, min, lowestCityHash};
 }
 
-void init_hashes(){
-	memset(productsHashes, 0x7F, sizeof(productsHashes));
-	memset(citiesHashes, 0x7F, sizeof(citiesHashes));
-	uint16_t min = -1;
+void init_hashmap(){
+	size_t hashmapSize = CITIES_HASHES*PRODUCTS_HASHES*sizeof(float);
+	hashmap = (float *) malloc(hashmapSize);
+	for(int x=0;x<hashmapSize/sizeof(float);x++)
+		hashmap[x] = FLT_MAX;
+
+	uint16_t min = -1, max = 0;
 	for(int x=0; x<citiesCount; x++){
 		char *c = cities[x];
-		uint16_t hash = cities_perf_hash(c, strlen(c));
+		uint32_t hash = cities_perf_hash(c, strlen(c));
 		if(hash < min) min = hash;
 	}
 	citiesHashesMin = min;
+
+	min = -1;
 	for(int x=0; x<productsCount; x++){
 		char *c = products[x];
-		uint16_t hash = products_perf_hash(c, strlen(c));
+		uint32_t hash = products_perf_hash(c, strlen(c));
 		if(hash < min) min = hash;
+		else if(hash > max) max = hash;
 	}
+	productsHashesMax = max;
 	productsHashesMin = min;
 }
 
+void selection_sort_products(uint32_t cityHash){
+	int minIndex; 
+	for(int x=0; x<productsCount-1; x++){ 
+		minIndex = x; 
+		for(int y=x+1; y<productsCount; y++){
+			char *product = products[y];
+			char *currentMinProduct = products[minIndex];
+			float price = hashmap[cityHash*productsHashesMax + products_perf_hash(product, strlen(product))];
+			float currentMinPrice = hashmap[cityHash*productsHashesMax + products_perf_hash(currentMinProduct, strlen(currentMinProduct))];
+
+			if(price < currentMinPrice) minIndex = y; 
+		}
+  
+		char *tmp = products[minIndex];
+		products[minIndex] = products[x]; 
+		products[x] = tmp;
+	}
+}
+
+void test(){
+	for(int x=0;x<citiesCount;x++){
+		char *city = cities[x];
+		uint32_t cityHash = cities_perf_hash(city, strlen(city));
+		for(int y=x+1;y<citiesCount;y++){
+			char *city2 = cities[y];
+			uint32_t cityHash2 = cities_perf_hash(city2, strlen(city2));
+			if(cityHash == cityHash2)
+				printf("clash: %s %d %s %d\n", city, cityHash, city2, cityHash2);
+		}
+	}
+	for(int x=0; x<citiesCount; x++){
+		char *city = cities[x];
+		uint32_t cityHash = cities_perf_hash(city, strlen(city));
+		printf("%s : \n", city);
+		for(int y=0; y<productsCount; y++){
+			char *product = products[y];
+			uint32_t productHash = products_perf_hash(product, strlen(product));
+			size_t priceIndex = cityHash*productsHashesMax + productHash;
+			float price = hashmap[priceIndex];
+			printf("\t%s : %.2f\n", product, price == FLT_MAX? 0.0f: price);
+		}
+		printf("\n");
+	}
+}
+
 int main(){
+
 	slurp_file();
-	init_hashes();
+	init_hashmap();
 
 	struct timespec init, final;
 	clock_gettime(CLOCK_REALTIME, &init);
-	cheapest_products();
+	city_record lowestCity = cheapest_products_city();
 	clock_gettime(CLOCK_REALTIME, &final);
 
 	size_t elapsed = ((size_t)final.tv_sec - (size_t)init.tv_sec) + ((size_t)final.tv_nsec - (size_t)init.tv_nsec);
-	printf("time took: %luns %fms\n", elapsed, (double)elapsed*1e-6);
+	printf("time took: %luns = %fms\n", elapsed, (double)elapsed*1e-6);
 
-	for(int x=0; x<productsCount; x++){
-		char *product = products[x];
-		real_num price = productsHashes[products_perf_hash(product, strlen(product))];
-		printf("%s : %c%c.%c%c\n", product, price.digit[0], price.digit[1], price.digit[2], price.digit[3] );
+	selection_sort_products(lowestCity.hash);
+	
+	printf("%s %.2f\n", lowestCity.city, lowestCity.total);
+	for(int y=0; y<5; y++){
+		char *product = products[y];
+		uint32_t productHash = products_perf_hash(product, strlen(product));
+		size_t priceIndex = lowestCity.hash*productsHashesMax + productHash;
+		float price = hashmap[priceIndex];
+		if(price != FLT_MAX)
+			printf("%s %.2f\n", product, price);
 	}
-
+	
 	return 0;
 }
