@@ -6,75 +6,70 @@
 #include <string.h>
 #include <float.h>
 
-#define  ARRAY_COUNT(arr) (sizeof(arr)/sizeof(arr[0]))
-#define PRODUCTS_HASHES 20000
-#define CITIES_HASHES 20000
+#define PRODUCTS_HASH_MAX 139
+#define CITIES_HASH_MAX 306
 
 //removed duplicated names: Cantaloupe, Cranberry, Coconut, Honeydew, Pomegranate, Artichoke.
-char *products[] = {
-    "Apple", "Banana", "Orange", "Strawberry", "Grapes",
-    "Watermelon", "Pineapple", "Mango", "Kiwi", "Peach",
-    "Plum", "Cherry", "Pear", "Blueberry", "Raspberry",
-    "Blackberry", "Cantaloupe", "Coconut",
-    "Lemon", "Lime", "Grapefruit", "Avocado", "Papaya",
-    "Guava", "Fig", "Passion_Fruit", "Apricot", "Nectarine",
-    "Cucumber", "Carrot", "Broccoli", "Spinach", "Kale",
-    "Lettuce", "Tomato", "Bell_Pepper", "Zucchini", "Eggplant",
-    "Cabbage", "Cauliflower", "Brussels_Sprouts", "Radish", "Beet",
-    "Asparagus", "Green_Beans", "Peas", "Celery",
-    "Onion", "Garlic", "Potato", "Sweet_Potato", "Yam",
-    "Butternut_Squash", "Acorn_Squash", "Pumpkin", "Cranberry", "Goji_Berry",
-    "Currant", "Date", "Clementine", "Rhubarb",
-    "Chard", "Collard_Greens", "Parsley", "Cilantro", "Mint",
-    "Basil", "Thyme", "Rosemary", "Sage", "Dill",
-    "Oregano", "Honeydew", "Pomegranate",
-    "Jackfruit", "Starfruit", "Persimmon", "Ginger", "Turnip",
-    "Jicama", "Kohlrabi", "Watercress", "Okra", "Artichoke",
-    "Plantain", "Cactus_Pear", "Kiwano", "Squash_Blossom", "Dragon_Fruit",
-    "Parsnip", "Rutabaga", "Salsify", "Bok_Choy", "Endive"
+char *products[94] = {
+	"Apple", "Banana", "Orange", "Strawberry", "Grapes",
+	"Watermelon", "Pineapple", "Mango", "Kiwi", "Peach",
+	"Plum", "Cherry", "Pear", "Blueberry", "Raspberry",
+	"Blackberry", "Cantaloupe", "Coconut",
+	"Lemon", "Lime", "Grapefruit", "Avocado", "Papaya",
+	"Guava", "Fig", "Passion_Fruit", "Apricot", "Nectarine",
+	"Cucumber", "Carrot", "Broccoli", "Spinach", "Kale",
+	"Lettuce", "Tomato", "Bell_Pepper", "Zucchini", "Eggplant",
+	"Cabbage", "Cauliflower", "Brussels_Sprouts", "Radish", "Beet",
+	"Asparagus", "Green_Beans", "Peas", "Celery",
+	"Onion", "Garlic", "Potato", "Sweet_Potato", "Yam",
+	"Butternut_Squash", "Acorn_Squash", "Pumpkin", "Cranberry", "Goji_Berry",
+	"Currant", "Date", "Clementine", "Rhubarb",
+	"Chard", "Collard_Greens", "Parsley", "Cilantro", "Mint",
+	"Basil", "Thyme", "Rosemary", "Sage", "Dill",
+	"Oregano", "Honeydew", "Pomegranate",
+	"Jackfruit", "Starfruit", "Persimmon", "Ginger", "Turnip",
+	"Jicama", "Kohlrabi", "Watercress", "Okra", "Artichoke",
+	"Plantain", "Cactus_Pear", "Kiwano", "Squash_Blossom", "Dragon_Fruit",
+	"Parsnip", "Rutabaga", "Salsify", "Bok_Choy", "Endive"
 };
-const int productsCount = ARRAY_COUNT(products);
+const int productsCount = 94;
 
-char *cities[] = {
-    "Casablanca", "Rabat", "Marrakech", "Fes", "Tangier",
-    "Agadir", "Meknes", "Oujda", "Kenitra", "Tetouan",
-    "Safi", "El_Jadida", "Beni_Mellal", "Errachidia",
-    "Taza", "Essaouira", "Khouribga", "Guelmim",
-    "Jorf_El_Melha", "Laayoune", "Ksar_El_Kebir", "Sale", "Bir_Lehlou",
-    "Arfoud", "Temara", "Mohammedia", "Settat",
-    "Béni_Mellal", "Nador", "Kalaat_MGouna",
-    "Chichaoua", "Chefchaouen", "Al_Hoceima", "Taourirt",
-    "Taroudant", "Guelta_Zemmur", "Dakhla", "Laâyoune",
-    "Tiznit","Tinghir", "Ifrane", "Azrou", "Bab_Taza",
-    "Berrechid", "Sidi_Slimane", "Souk_Larbaa", "Tiflet", "Sidi_Bennour",
-    "Larache", "Tan-Tan", "Sidi_Ifni", "Goulmima",
-    "Midelt", "Figuig", "Azilal", "Jerada", "Youssoufia",
-    "Ksar_es_Seghir", "Tichka", "Ait_Melloul",
-    "Layoune", "Ben_guerir", "Ouarzazate", "Inezgane",
-    "Oujda_Angad", "Sefrou", "Aourir",
-    "Oulad_Teima", "Tichla", "Bni_Hadifa",
-    "Fquih_Ben_Salah", "Guercif", "Bouarfa", "Demnate",
-    "Ahfir", "Berkane", "Akhfenir", "Boulemane",
-    "Khenifra", "Bir_Anzerane", "Assa", "Smara", "Boujdour",
-    "Tarfaya", "Ouazzane", "Zagora", "had_soualem",
-    "Saidia", "Bab_Berred", "Midar", "Moulay_Bousselham",
-    "Khemisset", "Guerguerat", "Asilah", "Sidi_Bouzid", "Tafraout",
-    "Imzouren", "Zemamra", "Sidi_Kacem", "Drarga", "Skhirate"
+char *cities[101] = {
+	"Casablanca", "Rabat", "Marrakech", "Fes", "Tangier",
+	"Agadir", "Meknes", "Oujda", "Kenitra", "Tetouan",
+	"Safi", "El_Jadida", "Beni_Mellal", "Errachidia",
+	"Taza", "Essaouira", "Khouribga", "Guelmim",
+	"Jorf_El_Melha", "Laayoune", "Ksar_El_Kebir", "Sale", "Bir_Lehlou",
+	"Arfoud", "Temara", "Mohammedia", "Settat",
+	"Béni_Mellal", "Nador", "Kalaat_MGouna",
+	"Chichaoua", "Chefchaouen", "Al_Hoceima", "Taourirt",
+	"Taroudant", "Guelta_Zemmur", "Dakhla", "Laâyoune",
+	"Tiznit","Tinghir", "Ifrane", "Azrou", "Bab_Taza",
+	"Berrechid", "Sidi_Slimane", "Souk_Larbaa", "Tiflet", "Sidi_Bennour",
+	"Larache", "Tan-Tan", "Sidi_Ifni", "Goulmima",
+	"Midelt", "Figuig", "Azilal", "Jerada", "Youssoufia",
+	"Ksar_es_Seghir", "Tichka", "Ait_Melloul",
+	"Layoune", "Ben_guerir", "Ouarzazate", "Inezgane",
+	"Oujda_Angad", "Sefrou", "Aourir",
+	"Oulad_Teima", "Tichla", "Bni_Hadifa",
+	"Fquih_Ben_Salah", "Guercif", "Bouarfa", "Demnate",
+	"Ahfir", "Berkane", "Akhfenir", "Boulemane",
+	"Khenifra", "Bir_Anzerane", "Assa", "Smara", "Boujdour",
+	"Tarfaya", "Ouazzane", "Zagora", "had_soualem",
+	"Saidia", "Bab_Berred", "Midar", "Moulay_Bousselham",
+	"Khemisset", "Guerguerat", "Asilah", "Sidi_Bouzid", "Tafraout",
+	"Imzouren", "Zemamra", "Sidi_Kacem", "Drarga", "Skhirate"
 };
-const int citiesCount = ARRAY_COUNT(cities);
-
-typedef struct{ char digit[4]; } real_num;
+const int citiesCount = 101;
 
 static char *input;
 static int inputCount;
-uint16_t citiesHashesMin = 0;
-uint16_t productsHashesMin = 0;
-uint16_t productsHashesMax = 0;
-float *hashmap;
+static uint16_t hashmap[CITIES_HASH_MAX*PRODUCTS_HASH_MAX];
+static uint64_t citiesTotalPrices[CITIES_HASH_MAX];
 
 void slurp_file(){
 	FILE *file = fopen("input.txt", "rb");
-	assert(file);
+	assert(file && "failed to open input.txt");
 	fseek(file, 0, SEEK_END);
 	size_t inputSize = ftell(file);
 	rewind(file);
@@ -85,29 +80,38 @@ void slurp_file(){
 	fclose(file);
 }
 
-float to_float(char digits[4]){
-	float f = 0.0f;
-	f += (digits[0] - '0')*10.0f;
-	f += (digits[1] - '0')*1.0f;
-	f += (digits[2] - '0')*0.1f;
-	f += (digits[3] - '0')*0.01f;
-	return f;
+uint16_t to_fixed_point(char digits[4]) {
+	return (digits[0] - '0')*1000 + (digits[1] - '0')*100 + (digits[2] - '0')*10 + (digits[3] - '0');
 }
 
-uint32_t products_perf_hash(char *cstr, size_t length){
-	//trial and error
-	return cstr[0]*length + cstr[1]*22 + cstr[length/3-1]*21 + cstr[length-1]*13 - productsHashesMin;
+//generated by gperf
+uint32_t products_perf_hash(char *str, size_t len){
+	static unsigned char asso_values[] = {
+		140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140,  40,  40,   0,  75,   0,   0,  15,  20, 140,  55,  50,  20,  30,  35,  95,   0, 140,  10,  25,  65, 140, 140,  20, 140,   5,   5, 140, 140, 140, 140, 140, 140,   0,   0,  65, 60,   0, 140,  65,  40,   5,  10,   0,  30,  50,   5,   0,  30, 140,   5,  20,   0,   0, 140,  55, 140,  20, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140
+	};     
+	return len + asso_values[(unsigned char)str[2]] + asso_values[(unsigned char)str[0]] + asso_values[(unsigned char)str[len - 1]];
 }
 
-uint32_t cities_perf_hash(char *cstr, size_t length){
-	//trial and error
-	//return cstr[0]*length + cstr[length-2]*length + cstr[length/4-1]*19 + cstr[length*3/4-1]*23 + cstr[length-1]*9 - citiesHashesMin;
-	//return cstr[0]*length + cstr[1]*length + cstr[2]*19 + cstr[length-1]*6 + cstr[length-2]*5 - citiesHashesMin;
-	return ((cstr[0]<<24) + (cstr[1]<<16) + (cstr[length*3/4-1]<<8) + (cstr[length-1])) % 12345;
+
+uint32_t cities_perf_hash(char *str, size_t len){
+  static unsigned short asso_values[] = {
+    307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 105,  50, 307,  25, 307, 307, 307,  65, 307,  35,   5,   0,   5, 307, 307, 307, 307,  25, 307,  25, 307, 307, 307, 307, 307, 307, 307, 307, 307,  65,   0,   0,  40,  95,  30,   5,  25, 120,   0,   5,  55,  70,  60,  30, 10,  15,   5,  10,   0,  20,  30,   0,  60, 307, 307,  10,  20,   0, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307,   0, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307,  15, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307, 307
+  };
+
+  uint32_t hval = len;
+  switch (hval){
+      default: hval += asso_values[(unsigned char)str[5]];
+      case 5: hval += asso_values[(unsigned char)str[4]+1];
+      case 4:
+      case 3: hval += asso_values[(unsigned char)str[2]];
+      case 2: hval += asso_values[(unsigned char)str[1]]; break;
+  }
+  return hval;
 }
 
-typedef struct{ char *city; float total; uint32_t hash; } city_record; 
-city_record cheapest_products_city(){
+//
+
+void parse_fill_hashmap(){
 	char *currentChar = input;
 
 	while((currentChar - input + 1) < inputCount){
@@ -132,64 +136,32 @@ city_record cheapest_products_city(){
 		digits[3] = *++currentChar == '\n'? '0': *currentChar++;
 		currentChar++;
 		
-		float currentPrice = to_float(digits);
-		uint32_t cityHash = cities_perf_hash(currentCity, currentCityLength);
-		uint32_t productHash = products_perf_hash(currentProduct, currentProductLength);
-		uint32_t priceIndex = cityHash*productsHashesMax + productHash;
-		float currentLowestPrice = hashmap[priceIndex];
+		uint16_t currentPrice = to_fixed_point(digits);
+		uint16_t cityHash = cities_perf_hash(currentCity, currentCityLength);
+		uint16_t productHash = products_perf_hash(currentProduct, currentProductLength);
+		uint16_t currentLowestPrice = hashmap[cityHash*PRODUCTS_HASH_MAX + productHash];
 
-		if(currentPrice < currentLowestPrice)
-			hashmap[priceIndex] = currentPrice;
+		citiesTotalPrices[cityHash] += currentPrice; 
+		if(currentLowestPrice == 0 || currentPrice < currentLowestPrice)
+			hashmap[cityHash*PRODUCTS_HASH_MAX + productHash] = currentPrice;
 	}
-
-	char *lowestCity;
-	uint32_t lowestCityHash;
-	float min = FLT_MAX;
-	for(int x=0;x<citiesCount;x++){
-		float sum = 0;
-		char *city = cities[x];
-		uint32_t cityHash = cities_perf_hash(city, strlen(city));
-		for(int y=0;y<productsCount;y++){
-			char *product = products[y];
-			uint32_t productHash = products_perf_hash(product, strlen(product));
-			float price = hashmap[cityHash*productsHashesMax + productHash];
-			if(price != FLT_MAX)
-				sum += price;
-		}
-
-		printf("%s : %f %f\n", city, sum, min);
-		if(sum != 0.0f && sum < min){
-			min = sum;
-			lowestCity = city;
-			lowestCityHash = cityHash;
-		}
-	}
-	return (city_record){ lowestCity, min, lowestCityHash};
 }
 
-void init_hashmap(){
-	size_t hashmapSize = CITIES_HASHES*PRODUCTS_HASHES*sizeof(float);
-	hashmap = (float *) malloc(hashmapSize);
-	for(int x=0;x<hashmapSize/sizeof(float);x++)
-		hashmap[x] = FLT_MAX;
-
-	uint16_t min = -1, max = 0;
-	for(int x=0; x<citiesCount; x++){
-		char *c = cities[x];
-		uint32_t hash = cities_perf_hash(c, strlen(c));
-		if(hash < min) min = hash;
+uint64_t cheapest_city(char **out){
+	char *lowestCity;
+	uint64_t min = -1;
+	for(int x=0;x<citiesCount;x++){
+		char *city = cities[x];
+		uint16_t cityHash = cities_perf_hash(city, strlen(city));
+		uint64_t total = citiesTotalPrices[cityHash];
+		//printf("%s : %f %f\n", city, sum, min);
+		if(total && total < min){
+			min = total;
+			lowestCity = city;
+		}
 	}
-	citiesHashesMin = min;
-
-	min = -1;
-	for(int x=0; x<productsCount; x++){
-		char *c = products[x];
-		uint32_t hash = products_perf_hash(c, strlen(c));
-		if(hash < min) min = hash;
-		else if(hash > max) max = hash;
-	}
-	productsHashesMax = max;
-	productsHashesMin = min;
+	*out = lowestCity;
+	return min;
 }
 
 void selection_sort_products(uint32_t cityHash){
@@ -199,8 +171,8 @@ void selection_sort_products(uint32_t cityHash){
 		for(int y=x+1; y<productsCount; y++){
 			char *product = products[y];
 			char *currentMinProduct = products[minIndex];
-			float price = hashmap[cityHash*productsHashesMax + products_perf_hash(product, strlen(product))];
-			float currentMinPrice = hashmap[cityHash*productsHashesMax + products_perf_hash(currentMinProduct, strlen(currentMinProduct))];
+			uint16_t price = hashmap[cityHash*PRODUCTS_HASH_MAX + products_perf_hash(product, strlen(product))];
+			uint16_t currentMinPrice = hashmap[cityHash*PRODUCTS_HASH_MAX + products_perf_hash(currentMinProduct, strlen(currentMinProduct))];
 
 			if(price < currentMinPrice) minIndex = y; 
 		}
@@ -211,56 +183,44 @@ void selection_sort_products(uint32_t cityHash){
 	}
 }
 
-void test(){
-	for(int x=0;x<citiesCount;x++){
-		char *city = cities[x];
-		uint32_t cityHash = cities_perf_hash(city, strlen(city));
-		for(int y=x+1;y<citiesCount;y++){
-			char *city2 = cities[y];
-			uint32_t cityHash2 = cities_perf_hash(city2, strlen(city2));
-			if(cityHash == cityHash2)
-				printf("clash: %s %d %s %d\n", city, cityHash, city2, cityHash2);
-		}
-	}
-	for(int x=0; x<citiesCount; x++){
-		char *city = cities[x];
-		uint32_t cityHash = cities_perf_hash(city, strlen(city));
-		printf("%s : \n", city);
-		for(int y=0; y<productsCount; y++){
-			char *product = products[y];
-			uint32_t productHash = products_perf_hash(product, strlen(product));
-			size_t priceIndex = cityHash*productsHashesMax + productHash;
-			float price = hashmap[priceIndex];
-			printf("\t%s : %.2f\n", product, price == FLT_MAX? 0.0f: price);
-		}
-		printf("\n");
-	}
-}
-
 int main(){
+	struct timespec t0, t1;
+	size_t elapsed[3];
 
 	slurp_file();
-	init_hashmap();
 
-	struct timespec init, final;
-	clock_gettime(CLOCK_REALTIME, &init);
-	city_record lowestCity = cheapest_products_city();
-	clock_gettime(CLOCK_REALTIME, &final);
+	clock_gettime(CLOCK_REALTIME, &t0);
+	parse_fill_hashmap();
+	clock_gettime(CLOCK_REALTIME, &t1);
+	elapsed[0] = ((size_t)t1.tv_sec - (size_t)t0.tv_sec) + ((size_t)t1.tv_nsec - (size_t)t0.tv_nsec);
 
-	size_t elapsed = ((size_t)final.tv_sec - (size_t)init.tv_sec) + ((size_t)final.tv_nsec - (size_t)init.tv_nsec);
-	printf("time took: %luns = %fms\n", elapsed, (double)elapsed*1e-6);
+	clock_gettime(CLOCK_REALTIME, &t0);
+	char *cheapestCity;
+	uint64_t cheapestCityTotal = cheapest_city(&cheapestCity);
+	clock_gettime(CLOCK_REALTIME, &t1);
+	elapsed[1] = ((size_t)t1.tv_sec - (size_t)t0.tv_sec) + ((size_t)t1.tv_nsec - (size_t)t0.tv_nsec);
 
-	selection_sort_products(lowestCity.hash);
+	clock_gettime(CLOCK_REALTIME, &t0);
+	uint16_t cheapestCityHash = cities_perf_hash(cheapestCity, strlen(cheapestCity));
+	selection_sort_products(cheapestCityHash);
+	clock_gettime(CLOCK_REALTIME, &t1);
+	elapsed[2] = ((size_t)t1.tv_sec - (size_t)t0.tv_sec) + ((size_t)t1.tv_nsec - (size_t)t0.tv_nsec);
 	
-	printf("%s %.2f\n", lowestCity.city, lowestCity.total);
-	for(int y=0; y<5; y++){
+	printf("%s %lu.%.2lu\n", cheapestCity, cheapestCityTotal/100, cheapestCityTotal%100);
+	for(int y=0, k=0; (k<5) && (y<productsCount); y++){
 		char *product = products[y];
-		uint32_t productHash = products_perf_hash(product, strlen(product));
-		size_t priceIndex = lowestCity.hash*productsHashesMax + productHash;
-		float price = hashmap[priceIndex];
-		if(price != FLT_MAX)
-			printf("%s %.2f\n", product, price);
+		uint16_t productHash = products_perf_hash(product, strlen(product));
+		uint32_t price = hashmap[cheapestCityHash*PRODUCTS_HASH_MAX + productHash];
+		if(price){
+			printf("%s %lu.%.2lu\n", product, price/100, price%100);
+			k++;
+		}
 	}
+
+	printf("parsing csv: %luns = %fms\n", elapsed[0], (double)elapsed[0]*1e-6);
+	printf("find cheapest city: %luns = %fms\n", elapsed[1], (double)elapsed[1]*1e-6);
+	printf("sort products: %luns = %fms\n", elapsed[2], (double)elapsed[2]*1e-6);
+	printf("total: %luns = %fms\n", elapsed[0] + elapsed[1] + elapsed[2], (double)(elapsed[0] + elapsed[1] + elapsed[2])*1e-6);
 	
 	return 0;
 }
